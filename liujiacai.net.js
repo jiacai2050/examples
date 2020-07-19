@@ -38,7 +38,7 @@ async function listPosts(browser, pageNumber) {
     try {
       let filepath = `${root_dir}/${post.title}.pdf`;
       const m = /\d+\/\d+\/\d+/.exec(post.url);
-      if (m !== null) {
+      if (!!m) {
         filepath = `${root_dir}/${m[0].replace(/\//g,'-')}-${post.title}.pdf`;
       }
       await util.saveAsPDF(browser, filepath, {url: post.url});

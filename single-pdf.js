@@ -11,12 +11,12 @@ const util = require('./util');
     return;
   }
 
-  const browser = await puppeteer.launch();
+  const browser = await util.newBrowser();
   for(let pageUrl of args) {
     try {
       await goto(browser, pageUrl);
     } catch(e) {
-      console.error(`goto ${pageUrl} failed, err: ${e}`);
+      console.trace(`goto ${pageUrl} failed`,e);
     }
 
   }
@@ -35,10 +35,14 @@ async function goto(browser, pageUrl) {
     return;
   }
   const body = await resp.text();
-  let filepath = /<title>(.+)<\/title>/.exec(body)[1] + '.pdf';
+  const title_result = /<title>(.+)<\/title>/.exec(body);
+  let filepath = `${pageUrl.replace(/\//g, '-')}.pdf`;
+  if (!!title_result) {
+    filepath = title_result[1] + '.pdf';
+  }
   const m = /\d+\/\d+\/\d+/.exec(resp.url());
-  if (!m) {
-     filepath = `${m[0].replace(/\//g,'-')}-${filepath}`;
+  if (!!m) {
+    filepath = `${m[0].replace(/\//g,'-')}-${filepath}`;
   }
   console.log(`save to ${filepath}...`);
 

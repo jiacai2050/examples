@@ -2,11 +2,36 @@
 
 const puppeteer = require('puppeteer');
 const fs = require('fs');
+const homedir = require('os').homedir();
+
+async function newBrowser(opts) {
+  opts = opts || {};
+
+  if (!!opts.dataDir) {
+    opts.dataDir = `${homedir}/pp`;
+  }
+  let launch_opts = {
+    userDataDir: opts.dataDir,
+    ignoreHTTPSErrors: true,
+    headless: true,
+    // ignoreDefaultArgs: true,
+    devtools: false,
+    timeout: 10 * 1000,
+  };
+  if (!!opts.useProxy) {
+    launch_opts.args = ['--proxy-server=socks5://localhost:13659']
+  } else {
+    launch_opts.args = ['--no-proxy-server']
+  }
+  console.log(`launch_opts ${ JSON.stringify(launch_opts) }`);
+  const browser = await puppeteer.launch(launch_opts);
+  return browser;
+}
 
 // opts is can be either { url: 'some-url to page', page: 'already opened paged'}
 async function saveAsPDF(browser, filepath, opts) {
   let page = opts.page;
-  if (!page) {
+  if (!!!page) {
     page = await browser.newPage();
     const resp = await page.goto(opts.url, {timeout: 60000, waitUntil: 'networkidle2'});
     if (resp.status() >= 400) {
@@ -40,9 +65,7 @@ async function saveAsPDF(browser, filepath, opts) {
     },
   });
 
-
 }
-
 
 function initRootDir() {
   let root_dir = "/tmp/blog";
@@ -67,4 +90,5 @@ function initRootDir() {
 module.exports = {
   saveAsPDF: saveAsPDF,
   initRootDir: initRootDir,
+  newBrowser: newBrowser,
 };
