@@ -3,9 +3,6 @@ const util = require('./util');
 
 (async() => {
 
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  // await page.setViewport({width: 1200, height: 800, deviceScaleFactor: 2});
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
@@ -14,21 +11,36 @@ const util = require('./util');
     return;
   }
 
-  const pageUrl = args[0];
-  const resp = await page.goto(pageUrl);
-  if (!resp.ok()) {
+  const browser = await puppeteer.launch();
+  for(let pageUrl of args) {
+    try {
+      await goto(browser, pageUrl);
+    } catch(e) {
+      console.error(`goto ${pageUrl} failed, err: ${e}`);
+    }
+
+  }
+  await browser.close();
+})();
+
+async function goto(browser, pageUrl) {
+  console.log(`goto ${pageUrl}...`);
+  const page = await browser.newPage();
+  // https://github.com/puppeteer/puppeteer/blob/v5.2.0/docs/api.md#pagegotourl-options
+  // networkidle2
+  const resp = await page.goto(pageUrl, {timeout: 60000 * 3, waitUntil: 'load'});
+  if (resp.status() >= 400) {
     let msg = await resp.text();
-    console.error(`open ${pageUrl} failed, body: ${msg}, header: ${resp.headers()}`);
-    process.exit(1);
+    console.error(`visit ${pageUrl} failed, status: ${resp.statusText()}, header: ${JSON.stringify(resp.headers())}`);
+    return;
   }
   const body = await resp.text();
   let filepath = /<title>(.+)<\/title>/.exec(body)[1] + '.pdf';
   const m = /\d+\/\d+\/\d+/.exec(resp.url());
-  if (m !== null) {
+  if (!m) {
      filepath = `${m[0].replace(/\//g,'-')}-${filepath}`;
   }
   console.log(`save to ${filepath}...`);
 
-  await util.saveAsPDF(browser, pageUrl, filepath);
-  await browser.close();
-})();
+  await util.saveAsPDF(browser, filepath, {page: page});
+}

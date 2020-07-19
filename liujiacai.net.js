@@ -41,7 +41,7 @@ async function listPosts(browser, pageNumber) {
       if (m !== null) {
         filepath = `${root_dir}/${m[0].replace(/\//g,'-')}-${post.title}.pdf`;
       }
-      await util.saveAsPDF(browser, post.url, filepath);
+      await util.saveAsPDF(browser, filepath, {url: post.url});
     } catch(err) {
       console.error(`${post.url} failed, err: ${err}`);
     }

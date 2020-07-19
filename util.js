@@ -3,20 +3,30 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 
-async function saveAsPDF(browser, url, filepath) {
-  const page = await browser.newPage();
-  const resp = await page.goto(url, {timeout: 120000});
-  if (resp.status() < 400) {
-    await page.pdf({
-      path: filepath,
-      printBackground: true,
-      displayHeaderFooter: true,
-      headerTemplate: `
+// opts is can be either { url: 'some-url to page', page: 'already opened paged'}
+async function saveAsPDF(browser, filepath, opts) {
+  let page = opts.page;
+  if (!page) {
+    page = await browser.newPage();
+    const resp = await page.goto(opts.url, {timeout: 60000, waitUntil: 'networkidle2'});
+    if (resp.status() >= 400) {
+      // let msg = await resp.text();
+      console.error(`visit ${opts.url} failed, status: ${resp.statusText()}, header: ${JSON.stringify(resp.headers())}`);
+      return;
+    }
+  }
+
+  await page.emulateMediaType('print');
+  await page.pdf({
+    path: filepath,
+    printBackground: true,
+    displayHeaderFooter: true,
+    headerTemplate: `
 <div style="width:100%; text-align:right; font-size:10px;">
     <span class="date"></span>
   </div>
 `,
-      footerTemplate: `
+    footerTemplate: `
 <div style="width:100%; text-align:left; font-size:10px;">
     <span class="url"></span>
   </div>
@@ -24,15 +34,12 @@ async function saveAsPDF(browser, url, filepath) {
     <span class="pageNumber"></span> / <span class="totalPages"></span>
   </div>
 `,
-      margin: {
-        bottom: 100,
-        top: 50
-      },
-    });
-  } else {
-    // let msg = await resp.text();
-    console.error(`visit ${post.url} failed, status: ${resp.statusText()}, header: ${JSON.stringify(resp.headers())}`);
-  }
+    margin: {
+      bottom: 100,
+      top: 50
+    },
+  });
+
 
 }
 
