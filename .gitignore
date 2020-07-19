@@ -8,3 +8,4 @@ node_modules/
 *error.log
 lhr_results.html
 test_script.js
+.DS_Store
